@@ -78,6 +78,12 @@ class ClickSeries:
     def read_sensor(self) -> tuple:
         pass
 
+    def __del__(self) -> None:
+        """
+        @brief: Destructor for Click series sensors
+        """
+        self.bus.close()
+
 
 class MS5637(ClickSeries):
     """
@@ -132,7 +138,7 @@ class MS5637(ClickSeries):
         @return: ADC data
         """
         self.bus.write_byte(self.i2c_address, command)
-        time.sleep(0.2)
+        time.sleep(0.01)
         data = self.bus.read_i2c_block_data(self.i2c_address, self._ADC_READ_COMMAND, 3)
         adc_data = (data[0] << 16) + (data[1] << 8) + data[2]
 
@@ -185,6 +191,8 @@ class MS5611(MS5637):
         @brief: Constructor for MS5611 sensor
         """
         super().__init__(bus, i2c_address, verbose)
+        self._CONVERT_D1_COMMAND = 0x48  # Highest oversampling rate
+        self._CONVERT_D2_COMMAND = 0x58  # Highest oversampling rate
 
     def read_sensor(self) -> tuple:
         """
