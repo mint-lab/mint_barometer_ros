@@ -1,4 +1,6 @@
+from collections import deque
 import time
+import numpy as np
 from smbus2 import SMBus
 
 
@@ -241,6 +243,60 @@ class MS5611(MS5637):
         super().__init__(bus, i2c_address, verbose)
         self._CONVERT_D1_COMMAND = 0x48  # Highest oversampling rate
         self._CONVERT_D2_COMMAND = 0x58  # Highest oversampling rate
+        # FIR filter coefficients (sampling rate: 30Hz, cutoff frequency: 0.3Hz, transition bandwidth: 3Hz, blackman window)
+        self._fir_coefficients = np.array(
+            [
+                -0.000000000000000001,
+                0.000064393676763220,
+                0.000271319801257540,
+                0.000649073204382278,
+                0.001235623050647806,
+                0.002076637553675906,
+                0.003222058252059904,
+                0.004721452177155942,
+                0.006618513253826244,
+                0.008945196904421814,
+                0.011716041834802050,
+                0.014923251981835048,
+                0.018533075973444006,
+                0.022483932798082779,
+                0.026686597480116862,
+                0.031026590809771163,
+                0.035368727580917296,
+                0.039563585562856544,
+                0.043455480385182557,
+                0.046891386356592825,
+                0.049730143962839937,
+                0.051851251307310706,
+                0.053162553912562159,
+                0.053606224358990776,
+                0.053162553912562159,
+                0.051851251307310706,
+                0.049730143962839930,
+                0.046891386356592839,
+                0.043455480385182564,
+                0.039563585562856544,
+                0.035368727580917296,
+                0.031026590809771187,
+                0.026686597480116866,
+                0.022483932798082775,
+                0.018533075973443999,
+                0.014923251981835051,
+                0.011716041834802057,
+                0.008945196904421819,
+                0.006618513253826253,
+                0.004721452177155945,
+                0.003222058252059902,
+                0.002076637553675908,
+                0.001235623050647806,
+                0.000649073204382280,
+                0.000271319801257541,
+                0.000064393676763220,
+                -0.000000000000000001,
+            ]
+        )
+        # Buffer for the FIR filter
+        self._buffer = deque([], maxlen=len(self._fir_coefficients))
 
     def read_sensor(self) -> tuple:
         """Function to read sensor data
@@ -278,8 +334,27 @@ class MS5611(MS5637):
         SENS -= SENS2
 
         P = ((D1 * SENS / 2097152) - OFF) / 32768
+
+        # Apply FIR filter
+        self._buffer.append(P)
+        if len(self._buffer) == len(self._fir_coefficients):
+            P = self.apply_fir_filter(np.array(self._buffer), self._fir_coefficients)
+
         return P / 100, (TEMP - T2) / 100
 
+    def apply_fir_filter(self, buffer: np.ndarray, h: np.ndarray) -> float:
+        """Function to apply FIR filter
 
-def apply_fir_filter():
-    pass
+        Parameters
+        ----------
+        buffer : np.ndarray
+            Buffer containing pressure data [hPa]
+        h : np.ndarray
+            Filter coefficients
+
+        Returns
+        -------
+        float
+            Filtered pressure data [hPa]
+        """
+        return np.convolve(h, buffer, mode="valid")[0]
