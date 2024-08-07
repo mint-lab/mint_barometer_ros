@@ -1,23 +1,26 @@
-"""
-@file barometer.py
-@brief Barometer sensor driver for Click series sensors
-"""
-
 import time
 from smbus2 import SMBus
 
 
 class ClickSeries:
-    """
-    @brief: Base class for Click series sensors
-    """
+    """Base class for Click series sensors"""
 
     def __init__(self, bus: SMBus, i2c_address: int, verbose=False) -> None:
-        """
-        @brief: Constructor for Click series sensors
-        @param bus: SMBus object
-        @param i2c_address: I2C address of the sensor
-        @param verbose: Verbose mode
+        """Constructor for Click series sensors
+
+        Parameters
+        ----------
+        bus : SMBus
+            SMBus object
+        i2c_address : int
+            I2C address of the sensor
+        verbose : bool, optional
+            Verbose mode, by default False
+
+        Raises
+        ------
+        Exception
+            Sensor not found
         """
         self.bus = bus
         self.i2c_address = i2c_address
@@ -36,10 +39,22 @@ class ClickSeries:
         pass
 
     def _check_device(self, address: int) -> bool:
-        """
-        @brief:Helper function to check if the I2C device is connected
-        @param address: I2C address of the device
-        @return: True if the device is connected
+        """Helper function to check if the I2C device is connected
+
+        Parameters
+        ----------
+        address : int
+            I2C address of the device
+
+        Returns
+        -------
+        bool
+            True if the device is connected, False otherwise
+
+        Raises
+        ------
+        Exception
+            [description]
         """
         try:
             self.bus.read_byte(address)
@@ -50,10 +65,17 @@ class ClickSeries:
             return False
 
     def _send_command(self, command: int) -> bool:
-        """
-        @brief: Helper function to send a command to the sensor
-        @param command: Command to send
-        @return: True if successful
+        """Helper function to send a command to the sensor
+
+        Parameters
+        ----------
+        command : int
+            Command to send
+
+        Returns
+        -------
+        bool
+            True if successful
         """
         if self._check_device(self.i2c_address):
             self.bus.write_byte(self.i2c_address, command)
@@ -63,9 +85,12 @@ class ClickSeries:
         return False
 
     def _reset_sensor(self) -> bool:
-        """
-        @brief: Helper function to reset the sensor
-        @return: True if successful
+        """Helper function to reset the sensor
+
+        Returns
+        -------
+        bool
+            True if successful, False otherwise
         """
         return self._send_command(self._reset_command())
 
@@ -79,23 +104,24 @@ class ClickSeries:
         pass
 
     def __del__(self) -> None:
-        """
-        @brief: Destructor for Click series sensors
-        """
+        """Destructor for Click series sensors"""
         self.bus.close()
 
 
 class MS5637(ClickSeries):
-    """
-    @brief: Class for MS5637 sensor
-    """
+    """Class for MS5637 sensor"""
 
     def __init__(self, bus: SMBus, i2c_address: int, verbose=False) -> None:
-        """
-        @brief: Constructor for MS5637 sensor
-        @param bus: SMBus object
-        @param i2c_address: I2C address of the sensor
-        @param verbose: Verbose mode
+        """Constructor for MS5637 sensor
+
+        Parameters
+        ----------
+        bus : SMBus
+            SMBus object
+        i2c_address : int
+            I2C address of the sensor
+        verbose : bool, optional
+            Verbose mode, by default False
         """
         self._RESET_COMMAND = 0x1E
         self._PROM_READ_COMMAND = 0xA0
@@ -105,21 +131,22 @@ class MS5637(ClickSeries):
         super().__init__(bus, i2c_address, verbose)
 
     def _reset_command(self) -> int:
-        """
-        @brief: Function to get the reset command
-        """
+        """Function to get the reset command"""
         return self._RESET_COMMAND
 
     def _read_prom(self) -> list:
-        """
-        @brief: Function to read the calibration data
-        @return: List containing calibration data
-                    [0]: Pressure sensitivity
-                    [1]: Pressure offset
-                    [2]: Temperature coefficient of pressure sensitivity
-                    [3]: Temperature coefficient of pressure offset
-                    [4]: Reference temperature
-                    [5]: Temperature coefficient of the temperature
+        """Function to read the calibration data
+
+        Returns
+        -------
+        list
+            List containing calibration data
+            [0]: Pressure sensitivity
+            [1]: Pressure offset
+            [2]: Temperature coefficient of pressure sensitivity
+            [3]: Temperature coefficient of pressure offset
+            [4]: Reference temperature
+            [5]: Temperature coefficient of the temperature
         """
         prom_data = []
         for i in range(1, 7):
@@ -132,10 +159,17 @@ class MS5637(ClickSeries):
         return prom_data
 
     def _read_adc(self, command: int) -> int:
-        """
-        @brief: Function to read the ADC data
-        @param command: Command to read the ADC data
-        @return: ADC data
+        """Function to read the ADC data
+
+        Parameters
+        ----------
+        command : int
+            Command to read the ADC data
+
+        Returns
+        -------
+        int
+            ADC data
         """
         self.bus.write_byte(self.i2c_address, command)
         time.sleep(0.01)
@@ -147,9 +181,12 @@ class MS5637(ClickSeries):
         return adc_data
 
     def read_sensor(self) -> tuple:
-        """
-        @brief: Function to read sensor data
-        @return: Tuple containing pressure and temperature (pressure [hPa], temperature [degree C])
+        """Function to read sensor data
+
+        Returns
+        -------
+        tuple
+            Tuple containing pressure and temperature (pressure [hPa], temperature [\u00B0C])
         """
         D1 = self._read_adc(self._CONVERT_D1_COMMAND)  # Pressure
         D2 = self._read_adc(self._CONVERT_D2_COMMAND)  # Temperature
@@ -182,22 +219,36 @@ class MS5637(ClickSeries):
 
 
 class MS5611(MS5637):
-    """
-    @brief: Class for MS5611 sensor
-    """
+    """Class for MS5611 sensor"""
 
     def __init__(self, bus: SMBus, i2c_address: int, verbose=False) -> None:
-        """
-        @brief: Constructor for MS5611 sensor
+        """Constructor for MS5611 sensor
+
+        Parameters
+        ----------
+        bus : SMBus
+            SMBus object
+        i2c_address : int
+            I2C address of the sensor
+        verbose : bool, optional
+            Verbose mode, by default False
+
+        Raises
+        ------
+        Exception
+            Sensor not found
         """
         super().__init__(bus, i2c_address, verbose)
         self._CONVERT_D1_COMMAND = 0x48  # Highest oversampling rate
         self._CONVERT_D2_COMMAND = 0x58  # Highest oversampling rate
 
     def read_sensor(self) -> tuple:
-        """
-        @brief: Function to read sensor data
-        @return: Tuple containing pressure and temperature (pressure [hPa], temperature [degree C])
+        """Function to read sensor data
+
+        Returns
+        -------
+        tuple
+            Tuple containing pressure and temperature (pressure [hPa], temperature [\u00B0C])
         """
         D1 = self._read_adc(self._CONVERT_D1_COMMAND)
         D2 = self._read_adc(self._CONVERT_D2_COMMAND)
@@ -228,3 +279,7 @@ class MS5611(MS5637):
 
         P = ((D1 * SENS / 2097152) - OFF) / 32768
         return P / 100, (TEMP - T2) / 100
+
+
+def apply_fir_filter():
+    pass
