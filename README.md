@@ -1,5 +1,5 @@
-# magic_wand_ros  
-A ROS 2 package for position estimation using a portable magic wand equipped with multiple sensors  
+# magic_box_ros  
+A ROS 2 package for position estimation using a portable magic box equipped with multiple sensors  
 
 ## Prerequisite  
 **Install [i2c-ch341-usb](https://github.com/gschorcht/i2c-ch341-usb)  kernel driver**  
