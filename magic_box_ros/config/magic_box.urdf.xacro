@@ -1,0 +1,176 @@
+<?xml version="1.0"?>
+<robot name="magic_box" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Materials -->
+  <material name="black">
+    <color rgba="0 0 0 1"/>
+  </material>
+  <material name="white">
+    <color rgba="1 1 1 0.7"/>
+  </material>
+  <material name="gray">
+    <color rgba="0.2 0.2 0.2 1"/>
+  </material>
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+  <material name="green">
+    <color rgba="0 1 0 1"/>
+  </material>
+
+
+  <!-- Base link -->
+  <link name="base_link">
+  </link>
+
+
+  <!-- ZED xacro -->
+  <xacro:arg name="camera_name"   default="zed2i"/>
+  <xacro:arg name="camera_model"  default="zed2i"/>
+  <xacro:arg name="custom_baseline"  default="0.0"/>
+  <xacro:arg name="use_zed_localization" default="false"/>
+  <!-- If GNSS fusion is enabled the position of the antenna with respect to the camera mount point is required -->
+  <xacro:arg name="enable_gnss"   default="false"/>
+  <xacro:arg name="gnss_x" default="0.0"/>
+  <xacro:arg name="gnss_y" default="0.0"/>
+  <xacro:arg name="gnss_z" default="0.0"/>
+
+  <xacro:include filename="$(find zed_wrapper)/urdf/zed_macro.urdf.xacro" />
+  <xacro:zed_camera
+    name="$(arg camera_name)"
+    model="$(arg camera_model)"
+    custom_baseline="$(arg custom_baseline)"
+    enable_gnss="$(arg enable_gnss)">
+	    <origin xyz="$(arg gnss_x) $(arg gnss_y) $(arg gnss_z)" rpy="0 0 0"/>
+  </xacro:zed_camera>
+
+  <!-- Add a joint to connect the ZED Camera to the robot -->
+  <xacro:if value="$(arg use_zed_localization)">
+    <!-- ZED Localization -> The reference link is '$(arg camera_name)_camera_link' and 'base_link' is a child -->
+    <joint name="$(arg camera_name)_joint" type="fixed">
+      <parent link="$(arg camera_name)_camera_link"/>
+      <child link="base_link"/>
+      <origin
+        xyz="-0.12 0.0 -0.25"
+        rpy="0 0 0"
+      />
+    </joint>
+  </xacro:if>
+  <xacro:unless value="$(arg use_zed_localization)">
+    <!-- NO ZED Localization -> '$(arg camera_name)_camera_link' is a child of 'base_link' -->
+    <joint name="$(arg camera_name)_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="$(arg camera_name)_camera_link"/>
+      <origin
+        xyz="0.12 0.0 0.25"
+        rpy="0 0 0"
+      />
+    </joint>
+  </xacro:unless>
+
+
+  <!-- Body -->
+  <joint name="body_joint" type="fixed">
+    <parent link="$(arg camera_name)_camera_link"/>
+    <child link="body_link"/>
+    <origin xyz="-0.120 0 -0.0225" rpy="0 0 0"/>
+  </joint>
+
+  <link name="body_link">
+    <visual>
+      <geometry>
+        <box size="0.268 0.173 0.045"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.268 0.173 0.045"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <!-- RTK GPS -->
+  <joint name="rtk_joint" type="fixed">
+    <parent link="$(arg camera_name)_camera_link"/>
+    <child link="rtk_link"/>
+    <origin xyz="-0.004 0 0.041" rpy="0 0 0"/>
+  </joint>
+  <link name="rtk_link">
+    <visual>
+      <geometry>
+        <box size="0.054 0.054 0.022"/>
+      </geometry>
+    <material name="gray"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.054 0.054 0.022"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <!-- Normal GPS -->
+  <joint name="normal_joint" type="fixed">
+    <parent link="$(arg camera_name)_camera_link"/>
+    <child link="normal_link"/>
+    <origin xyz="-0.004 0.06 0.0385" rpy="0 0 0"/>
+  </joint>
+  <link name="normal_link">
+    <visual>
+      <geometry>
+        <box size="0.046 0.046 0.017"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.046 0.046 0.017"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <!-- IMU -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="body_link"/>
+    <child link="imu_link"/>
+    <origin xyz="-0.11 -0.066 0.0" rpy="0 0 ${-pi/2}"/>
+  </joint>
+  <link name="imu_link">
+    <visual>
+      <geometry>
+        <box size="0.028 0.021 0.002"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.028 0.021 0.002"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <!-- Barometer -->
+  <joint name="barometer_joint" type="fixed">
+    <parent link="body_link"/>
+    <child link="barometer_link"/>
+    <origin xyz="-0.094 0.04 0.0225" rpy="0 0 0"/>
+  </joint>
+  <link name="barometer_link">
+    <visual>
+      <geometry>
+        <box size="0.028 0.025 0.002"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.028 0.025 0.002"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
