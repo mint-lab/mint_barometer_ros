@@ -23,10 +23,10 @@ class MS5611Node(Node):
         )
 
         self.publisher_pressure = self.create_publisher(
-            FluidPressure, "/magic_wand/pressure", 10
+            FluidPressure, "/magic_box/pressure", 10
         )
         self.publisher_temperature = self.create_publisher(
-            Temperature, "/magic_wand/temperature", 10
+            Temperature, "/magic_box/temperature", 10
         )
         self.timer = self.create_timer(
             (timer_period := 0.033), self.publish_barometric_data
