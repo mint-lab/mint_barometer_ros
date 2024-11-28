@@ -1,0 +1,18 @@
+session_name: MagicBox
+windows:
+  - window_name: MINT_Lab
+    layout: tiled
+    shell_command_before:
+      - source /opt/ros/${ROS_DISTRO}/setup.bash
+      - source /mint_ws/install/setup.bash
+    panes:
+      - shell_command:
+        - ros2 launch myahrs_ros2_driver myahrs_ros2_driver_noviewer.launch.py
+      - shell_command:
+        - ros2 launch nmea_navsat_driver ublox_serial.launch.py
+      - shell_command:
+        - ros2 launch nmea_navsat_driver ascen_serial.launch.py
+      - shell_command:
+        - ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2
+      - shell_command:
+        - ros2 run magic_box_ros ms5611_node
